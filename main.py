@@ -1,4 +1,21 @@
-DEBUG   = 2
+## Special comment meanings:
+#  TODO:   Something planned.
+#  BUG:    More severe problem.
+#  FIXME:  More mild problem.
+#  XXX:    Highlight a possible problem spot.
+#  UNDONE: A rollback of previous code/commits.
+#  HACK:   A workaround. Can be combined with FIXME/XXX if the workaround is considered fragile and needs to be rewritten.
+#  MAGIC:  A workaround. Considered clever and safe so it will likely stay as is.
+#  NOTE:   Other types of notes.
+#  !!:     Attention needed.
+#  !!!:    Very important information.
+#  ?:      Help wanted.
+#  ??:     Needs to be immediately solved.
+#  BC:     Build Change, i.e. changed between different builds.
+#  May include the date the comment was written,
+#  and the first 8 along with ?? may include the date due.
+
+DEBUG   = 2          # BC
 VERSION = '0.1.0a1'
 if __name__ == '__main__':
     import argparse as ap
