@@ -1,3 +1,7 @@
+import ifix
+from main import *
+from utils import *
+import sys
 try:
     import threading
 except Exception:
@@ -32,7 +36,9 @@ class Thread:
         if isinstance(self.r, ThreadNotEnded):
             raise self.r
         return self.r
-    
+def setswitchinterval(interval):
+    sys.setswitchinterval(interval)
+
 if __name__ == '__main__':
     def test():
         for _ in range(9000000): pass
