@@ -184,8 +184,8 @@ def lex(code: str) -> list[token.Token]:
                 ...
             else:
                 ...
-        
-    
+
+
 if __name__ == '__main__' and DEBUG >= 2:
     x = token.Token("x")
     print(x)

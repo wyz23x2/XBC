@@ -41,7 +41,8 @@ def setswitchinterval(interval):
 
 if __name__ == '__main__':
     def test():
-        for _ in range(9000000): pass
+        for _ in range(9000000):
+            pass
         print('5')
         return 5
     t = Thread(test)
