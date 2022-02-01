@@ -26,7 +26,7 @@ def _translate(a):
                   .replace(f'${c} '.lower(), COLOR_DICT[c])
                   .replace(f'${c}'.lower(), COLOR_DICT[c])
                   .replace(f'${c} '.title(), COLOR_DICT[c])
-                  .replace(f'${c}'.title(), COLOR_DICT[c]))   
+                  .replace(f'${c}'.title(), COLOR_DICT[c]))
 def printf(*args, **kwargs):
     """Print translating color codes in strings."""
     args = list(args)
