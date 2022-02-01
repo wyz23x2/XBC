@@ -152,6 +152,7 @@ del Keyword
 class String(_Token):
     pass
 del String
+
 def lex(code: str) -> list[token.Token]:
     tokens = deque()
     lines = code.splitlines()
@@ -159,12 +160,16 @@ def lex(code: str) -> list[token.Token]:
     in_comment = False
     this_str = deque(maxlen=MAXSTRLEN)
     str_start = None
+    prev = []
     for line in lines:
         if line.startswith(LCOMMENT) and not in_string: continue
         for char in line:
+            prev.append(char)
+            ps = ''.join(prev)
             if in_comment:
                 continue
             if in_string:
+                # TODO
                 if char == '\\':
                     ...
                 if char == str_start:
@@ -173,9 +178,9 @@ def lex(code: str) -> list[token.Token]:
                     in_string = False
                 else:
                     this_str.append(char)
-            elif char == LCOMMENT:
+            elif ps.endswith():
                 break
-            elif ...:
+            elif in_comment:
                 ...
             else:
                 ...
