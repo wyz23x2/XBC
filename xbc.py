@@ -5,4 +5,5 @@ VERHEX  = 0o00010011
 #           ^^  ^^ ^ Serial
 #        Major Micro
 from utils import *
-print(VERHEX)
+if __name__ == '__main__':
+    print(VERHEX)
