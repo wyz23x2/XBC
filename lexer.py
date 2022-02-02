@@ -205,7 +205,6 @@ def lex(code: str) -> list[token.Token]:
                         strpush('\\')
                         strpush(char)
             if in_string and not in_comment:
-                # TODO
                 if char == '\\':
                     str_escaping = True
                     continue
