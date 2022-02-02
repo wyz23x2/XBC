@@ -6,16 +6,17 @@ import sys
 import os
 from main import *
 
-COLOR_DICT = {'BLACK': '\033[30m',
-              'R': '\033[31m', 'RED': '\033[31m',
-              'Y': '\033[33m', 'YELLOW': '\033[33m',
-              'G': '\033[32m', 'GREEN': '\033[33m',
-              'C': '\033[36m', 'CYAN': '\033[36m',
-              'B': '\033[34m', 'BLUE': '\033[34m',
-              'P': '\033[35m', 'PURPLE': '\033[35m',
-              'W': '\033[37m', 'WHITE': '\033[37m',
-              'b': '\033[1m', 'BOLD': '\033[1m',
-              'r': '\033[0m', 'RESET': '\033[0m'}
+i = sys.intern
+COLOR_DICT = {i('BLACK'): '\033[30m',
+              i('R'): '\033[31m', i('RED'): '\033[31m',
+              i('Y'): '\033[33m', i('YELLOW'): '\033[33m',
+              i('G'): '\033[32m', i('GREEN'): '\033[33m',
+              i('C'): '\033[36m', i('CYAN'): '\033[36m',
+              i('B'): '\033[34m', i('BLUE'): '\033[34m',
+              i('P'): '\033[35m', i('PURPLE'): '\033[35m',
+              i('W'): '\033[37m', i('WHITE'): '\033[37m',
+              i('b'): '\033[1m',  i('BOLD'): '\033[1m',
+              i('r'): '\033[0m',  i('RESET'): '\033[0m'}
 def _translate(a):
     for c in COLOR_DICT:
         if c in {'b', 'B', 'R', 'r'}:

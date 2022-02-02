@@ -1,8 +1,7 @@
 [flake8]
-select = C901, E101, E111, E112, E113, E201, E202, E211, E223, E224, E231, E241,
-         E242, E251, E261, E265, E271, E272, E273, E274, E275, E303, E304, E502,
-         E702, E703, E711, E712, E713, E714, E721, E722, E731, E741, E742, E743,
-         E9, E999, W1, W2, W6, F402, F404, F406, F407, F5, F6, F7, F811, F831,
-         F841, F901
-max-complexity = 10
+select = C901, E101, E111, E112, E113, E201, E202, E211, E223, E224, E231, E251,
+         E261, E265, E271, E272, E273, E274, E275, E303, E304, E502, E702, E703,
+         E711, E712, E713, E714, E721, E722, E731, E741, E742, E743, E9, E999,
+         W1, W2, W6, F402, F404, F406, F407, F5, F6, F7, F811, F831, F841, F901
+max-complexity = 20
 exclude = .venv, .git, __pycache__, source/conf.py, old, build
