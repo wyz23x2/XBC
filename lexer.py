@@ -1,5 +1,6 @@
 from main import *
 from utils import *
+from sys import intern as i
 from collections import deque
 
 # Binary Operators #
@@ -28,11 +29,11 @@ POS    = 0x15  #  +
 NEG    = 0x16  #  -
 REF    = 0x17  #  @
 # Bitwise AND/OR/NOT are functions in XBC.
-NDIC  = {1: {"+": POS, "-": NEG, "!": NOT, "@": REF},
-         2: {"+": ADD, "-": NEG, "*": MUL, "/": DIV,
-             "%": MOD, "^": POW, "<<": LSHIFT, ">>": RSHIFT,
-             "<": LT, "<=": LE, "==": EQ, "!=": NE,
-             ">=": GE, ">": GT, "~": RANGE},
+NDIC  = {1: {i("+"): POS, i("-"): NEG, i("!"): NOT, i("@"): REF},
+         2: {i("+"): ADD, i("-"): NEG, i("*"): MUL, i("/"): DIV,
+             i("%"): MOD, i("^"): POW, i("<<"): LSHIFT, i(">>"): RSHIFT,
+             i("<"): LT, i("<="): LE, i("=="): EQ, i("!="): NE,
+             i(">="): GE, i(">"): GT, i("~"): RANGE},
          }
 KEYWORDS  = frozenset({"if"})
 LCOMMENT  = "#"
@@ -108,7 +109,7 @@ del Name
 class Op(_Token):
     def __init__(self, op: str, left=None, right=None, middle=None, n=-1):
         self._setid()
-        self.op = op
+        self.op = i(op)
         if n is None or n <= 0:
             n = (left is not None) + (middle is not None) + (right is not None)
         if n == 0:
@@ -120,10 +121,11 @@ class Op(_Token):
         self.left, self.middle, self.right = left, middle, right
     @staticmethod
     def isop(s: str, n: int|None = None):
+        s = i(s)
         if n is None:
-            for i in NDIC:
+            for x in NDIC:
                 try:
-                    NDIC[i][s]
+                    NDIC[x][s]
                 except KeyError:
                     pass
                 else:
