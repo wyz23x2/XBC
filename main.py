@@ -16,8 +16,8 @@
 #  and the first 8 along with ?? may include the date due.
 
 DEBUG   = 2          # BC
-VERSION = '0.1.0a1'
 if __name__ == '__main__':
+    from xbc import VERSION
     import argparse as ap
     parser = ap.ArgumentParser('XBC', allow_abbrev=False)
     parser.add_argument('-V', '--version', action='version', version=VERSION)

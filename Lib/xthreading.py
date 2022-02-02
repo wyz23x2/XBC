@@ -36,6 +36,9 @@ class Thread:
         if isinstance(self.r, ThreadNotEnded):
             raise self.r
         return self.r
+    @property
+    def alive(self):
+        return self.t.is_alive()
 def setswitchinterval(interval):
     sys.setswitchinterval(interval)
 
@@ -52,6 +55,6 @@ if __name__ == '__main__':
         try:
             print(t.returned())
         except Exception:
-            continue
+            assert t.alive
         else:
             break
