@@ -1,0 +1,12 @@
+**/__pycache__/
+**/.*
+!.flake8
+!.gitignore
+old/
+build/
+source/
+make*
+**/*.exe
+**/*.obj
+**/*.egg-info
+push.bat
