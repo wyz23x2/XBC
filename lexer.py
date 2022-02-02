@@ -118,6 +118,25 @@ class Op(_Token):
         except KeyError as e:
             raise ValueError(f'Invalid operator {op!r} for n={n!r}') from e
         self.left, self.middle, self.right = left, middle, right
+    @staticmethod
+    def isop(s: str, n: int|None = None):
+        if n is None:
+            for i in NDIC:
+                try:
+                    NDIC[i][s]
+                except KeyError:
+                    pass
+                else:
+                    return True
+            else:
+                return False
+        else:
+            try:
+                NDIC[n][s]
+            except KeyError:
+                return False
+            else:
+                return True
     def __str__(self):
         lis = [repr(self.op)]
         if self.left is not None:
@@ -166,9 +185,7 @@ def lex(code: str) -> list[token.Token]:
         for char in line:
             prev.append(char)
             ps = ''.join(prev)
-            if in_comment:
-                continue
-            if in_string:
+            if in_string and not in_comment:
                 # TODO
                 if char == '\\':
                     ...
@@ -178,10 +195,14 @@ def lex(code: str) -> list[token.Token]:
                     in_string = False
                 else:
                     this_str.append(char)
-            elif ps.endswith():
-                break
+            elif ps.endswith(ECOMMENT):
+                in_comment = False
+                prev.clear()
+                continue
             elif in_comment:
-                ...
+                continue
+            elif ps.endswith(SCOMMENT):
+                in_comment = True
             else:
                 ...
 
