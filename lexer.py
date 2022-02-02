@@ -178,23 +178,41 @@ def lex(code: str) -> list[token.Token]:
     in_string = False
     in_comment = False
     this_str = deque(maxlen=MAXSTRLEN)
+    str_escaping = False
     str_start = None
     prev = []
+    strpush = this_str.append
     for line in lines:
         if line.startswith(LCOMMENT) and not in_string: continue
         for char in line:
             prev.append(char)
             ps = ''.join(prev)
+            if str_escaping:
+                # FIXME: Multi char escapes unsupported
+                match char:
+                    case 'n': strpush('\n')
+                    case 'r': strpush('\r')
+                    case 't': strpush('\t')
+                    case 'b': strpush('\b')
+                    case 'f': strpush('\f')
+                    case '"': strpush('"')
+                    case "'": strpush("'")
+                    case '\\': strpush('\\')
+                    case _:
+                        ...
+                        strpush('\\')
+                        strpush(char)
             if in_string and not in_comment:
                 # TODO
                 if char == '\\':
-                    ...
+                    str_escaping = True
+                    continue
                 if char == str_start:
                     tokens.append(token.String(''.join(this_str)))
                     this_str.clear()
                     in_string = False
                 else:
-                    this_str.append(char)
+                    strpush(char)
             elif ps.endswith(ECOMMENT):
                 in_comment = False
                 prev.clear()
