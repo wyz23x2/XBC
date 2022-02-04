@@ -4,6 +4,7 @@
 #  FIXME:  More mild problem.
 #  XXX:    Highlight a possible problem spot.
 #  UNDONE: A rollback of previous code/commits.
+#  MV:     Code should be moved to another place.
 #  HACK:   A workaround. Can be combined with FIXME/XXX if the workaround is considered fragile and needs to be rewritten.
 #  MAGIC:  A workaround. Considered clever and safe so it will likely stay as is.
 #  NOTE:   Other types of notes.

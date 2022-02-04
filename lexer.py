@@ -113,18 +113,22 @@ class Name(_Token):
 del Name
 @token
 class Op(_Token):
-    def __init__(self, op: str, left=None, right=None, middle=None, n=-1):
+    def __init__(self, op: str, /):
         self._setid()
         self.op = i(op)
-        if n is None or n <= 0:
-            n = (left is not None) + (middle is not None) + (right is not None)
-        if n == 0:
-            raise ValueError('No sides provided')
-        try:
-            self.type = NDIC[n][op]
-        except KeyError as e:
-            raise ValueError(f'Invalid operator {op!r} for n={n!r}') from e
-        self.left, self.middle, self.right = left, middle, right
+    # MV: The grouping of operators and sides should be done by the parser.
+    # def __init__(self, op: str, left=None, right=None, middle=None, n=-1):
+    #     self._setid()
+    #     self.op = i(op)
+    #     if n is None or n <= 0:
+    #         n = (left is not None) + (middle is not None) + (right is not None)
+    #     if n == 0:
+    #         raise ValueError('No sides provided')
+    #     try:
+    #         self.type = NDIC[n][op]
+    #     except KeyError as e:
+    #         raise ValueError(f'Invalid operator {op!r} for n={n!r}') from e
+    #     self.left, self.middle, self.right = left, middle, right
     @staticmethod
     def isop(s: str, n: int|None = None):
         s = i(s)
@@ -146,24 +150,16 @@ class Op(_Token):
             else:
                 return True
     def __str__(self):
-        lis = [repr(self.op)]
-        if self.left is not None:
-            lis.append(f'left={self.left!s}')
-        if self.middle is not None:
-            lis.append(f'middle={self.middle!s}')
-        if self.right is not None:
-            lis.append(f'right={self.right!s}')
-        return f'{self.__class__.__name__}({", ".join(lis)})'
+        return f'{self.__class__.__name__}({self.op!r})'
     def __repr__(self):
-        return f'{self._cls_name(self.__class__)}({self.op!r}, left={self.left!r}, middle={self.middle!r}, right={self.right!r})'
+        return f'{self._cls_name(self.__class__)}({self.op!r})'
     @property
     def content(self):
         return self.op
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return False
-        return ((self.left, self.middle, self.right, self.op) ==
-                (other.left, other.middle, other.right, other.op))
+        return self.op == other.op
 del Op
 @token
 class Keyword(_Token):
@@ -189,6 +185,9 @@ def lex(code: str) -> list[token.Token]:
     while True:
         if end > len(code):
             break
+        if end <= start:
+            break  # TODO
+        valid = False
         s = code[start:end]
         if (s.startswith(STRSTART) and
             s[0] == s[-1]          and
@@ -198,8 +197,15 @@ def lex(code: str) -> list[token.Token]:
             if '\\' not in s:
                 # No escapes
                 tokens.append(token.String(s[1:-1]))
-                start = end+1
-                end += 2
+                valid = True
+        elif token.Op.isop(s):
+            tokens.append(token.Op(s))
+            valid = True
+        if valid:
+            start = end
+            end = len(code)
+        else:
+            end -= 1
     return tokens
 # def lex(code: str) -> list[token.Token]:
 #     tokens = deque()
@@ -258,8 +264,8 @@ if __name__ == '__main__' and DEBUG >= 2:
     print(x)
     y = token.Name("y")
     print(y)
-    z = token.Op("*", x, y)
+    z = token.Op("*")
     print(z)
     a = token.Kw('iXf')
     print(a)
-    print(lex('"x"'))
+    print(lex('"x"+"y"'))
