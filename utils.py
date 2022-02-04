@@ -89,7 +89,7 @@ def exit_handler(exitcode: int=0) -> NoReturn:
     except Exception:
         abort_handler('$b$R Error occurred while exiting; process aborted.$r', force=True)
 @signals.register('warning')
-def warning_handler(message: str=None, type: Warning=Warning, *, stacklevel: int=2):
+def warning_handler(message: str=None, type: Warning=Warning, *, stacklevel: int=4):
     if DEBUG <= 0:
         return
     w.warn(f'\033[33m{message}\033[m', type, stacklevel)

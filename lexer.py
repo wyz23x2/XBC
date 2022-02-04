@@ -102,6 +102,8 @@ class _Token:
         return self.cnt
     def __eq__(self, other):
         return self.content == getattr(other, 'content', 0)
+    def __hash__(self):
+        return hash(self.content)
 @token
 class Name(_Token):
     def __init__(self, name: str):
@@ -165,7 +167,7 @@ del Op
 class Keyword(_Token):
     def __init__(self, keyword: str):
         if keyword not in KEYWORDS:
-            warning(f"Invalid keyword: {keyword!r}")
+            warning(f"Invalid keyword: {keyword!r}", stacklevel=5)
         self.keyword = keyword
     @property
     def content(self):
