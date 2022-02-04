@@ -42,7 +42,7 @@ SCOMMENT  = "#*"
 ECOMMENT  = "*#"
 STRSTART  = "'", '"'
 STREND    = STRSTART
-RESERVED  = '\x01'
+RESERVED  = '\x03'
 ESCAPE_MAPPING = {'\\\\': f'\\{RESERVED}',  # !! This must be the first.
                   r'\n': '\n',
                   r'\r': '\r',
@@ -225,6 +225,7 @@ class Float(_Token):
         if len(parts) > 2:
             return False
         return token.Integer.isint(parts[0]) and token.Integer.isint(parts[1])
+del Float
 MAPPING = {token.Op.isop: token.Op,
            token.Float.isfloat: token.Float,
            token.Integer.isint: token.Integer,
