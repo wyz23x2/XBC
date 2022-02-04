@@ -1,6 +1,7 @@
 from main import *
 from utils import *
 from sys import intern as i
+from string import ascii_letters as _letters
 from collections import deque
 
 # Binary Operators #
@@ -46,8 +47,12 @@ ESCAPE_MAPPING = {'\\\\': f'\\{RESERVED}',  # !! This must be the first.
                   r'\n': '\n',
                   r'\r': '\r',
                   r'\t': '\t'}
+DIGITS   = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
+NAMESET  = DIGITS | set(_letters) | {'$', '_'}
 MAXSTRLEN = None
 
+def isdigit(s: str) -> bool:
+    return s in DIGITS
 class _tokenns:
     def __init__(self, name='namespace'):
         self.__name = name
@@ -113,6 +118,11 @@ class Name(_Token):
     @property
     def content(self):
         return self.name
+    @staticmethod
+    def isname(s: str):
+        if s[0] not in NAMESET - DIGITS:
+            return False
+        return not tuple(filter(lambda x: x not in NAMESET, s))
 del Name
 @token
 class Op(_Token):
@@ -167,18 +177,59 @@ del Op
 @token
 class Keyword(_Token):
     def __init__(self, keyword: str):
-        if keyword not in KEYWORDS:
+        if not self.iskeyword(keyword):
             warning(f"Invalid keyword: {keyword!r}", stacklevel=5)
         self.keyword = keyword
     @property
     def content(self):
         return self.keyword
+    @staticmethod
+    def iskeyword(s):
+        return s in KEYWORDS
 del Keyword
 @token
 class String(_Token):
     pass
 del String
-
+@token
+class Integer(_Token):
+    def __init__(self, n: str):
+        if not self.isint(n):
+            warning(f"Invalid integer: {n!r}", stacklevel=5)
+        self.n = n
+    @property
+    def content(self):
+        return self.n
+    @staticmethod
+    def isint(s):
+        return not tuple(filter(lambda x: not isdigit(x), s))
+del Integer
+@token
+class Float(_Token):
+    def __init__(self, f: str):
+        if not self.isfloat(f):
+            warning(f"Invalid float: {f!r}", stacklevel=5)
+        self.f = f
+    @property
+    def content(self):
+        return self.f
+    @staticmethod
+    def isfloat(f: str):
+        if '.' not in f:
+            return False
+        parts = tuple(filter(None, f.split('.')))
+        if f.index('.') == 0:
+            parts = ['0', *parts]
+        elif f.index('.')+1 == len(f):
+            parts = [*parts, '0']
+        if len(parts) > 2:
+            return False
+        return token.Integer.isint(parts[0]) and token.Integer.isint(parts[1])
+MAPPING = {token.Op.isop: token.Op,
+           token.Float.isfloat: token.Float,
+           token.Integer.isint: token.Integer,
+           token.Keyword.iskeyword: token.Keyword,
+           token.Name.isname: token.Name}
 def lex(code: str) -> list[token.Token]:
     if not code.strip():
         return [code]
@@ -218,9 +269,12 @@ def lex(code: str) -> list[token.Token]:
                 if c == 2:
                     tokens.append(token.String(s[1:-1]))
                     valid = True
-        elif token.Op.isop(s):
-            tokens.append(token.Op(s))
-            valid = True
+        else:
+            for func in MAPPING:
+                if func(s):
+                    tokens.append(MAPPING[func](s))
+                    valid = True
+                    break
         if valid:
             start = end
             end = len(code)
@@ -289,3 +343,4 @@ if __name__ == '__main__' and DEBUG >= 2:
     a = token.Kw('iXf')
     print(a)
     print(lex(r'"\nx"+"y"'))
+    print(lex('-156*-.657>>3^+x*2.48-15*-394.48:'))
