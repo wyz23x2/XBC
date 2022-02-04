@@ -232,7 +232,7 @@ MAPPING = {token.Op.isop: token.Op,
            token.Name.isname: token.Name}
 def lex(code: str) -> list[token.Token]:
     if not code.strip():
-        return [code]
+        return []
     tokens = deque()
     start = 0
     end = len(code)
@@ -240,7 +240,9 @@ def lex(code: str) -> list[token.Token]:
         if end > len(code):
             break
         if end <= start:
-            break  # TODO
+            if start < len(code):
+                tokens.append(token.Token(code[start]))
+            break
         valid = False
         s = code[start:end]
         if (s.startswith(STRSTART)  and
@@ -337,13 +339,5 @@ def lex(code: str) -> list[token.Token]:
 
 
 if __name__ == '__main__' and DEBUG >= 2:
-    x = token.Token("x")
-    print(x)
-    y = token.Name("y")
-    print(y)
-    z = token.Op("*")
-    print(z)
-    a = token.Kw('iXf')
-    print(a)
     print(lex(r'"\nx"+"y"'))
     print(lex('if -156*-.657>>3^+x*2.48-15*-394.48:'))
