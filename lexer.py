@@ -1,6 +1,7 @@
 from main import *
 from utils import *
 from sys import intern as i
+from string import ascii_letters as _letters
 from collections import deque
 
 # Binary Operators #
@@ -41,12 +42,17 @@ SCOMMENT  = "#*"
 ECOMMENT  = "*#"
 STRSTART  = "'", '"'
 STREND    = STRSTART
-ESCAPE_MAPPING = {'\\\\': '\\',  # !! This must be the first.
+RESERVED  = '\x01'
+ESCAPE_MAPPING = {'\\\\': f'\\{RESERVED}',  # !! This must be the first.
                   r'\n': '\n',
                   r'\r': '\r',
                   r'\t': '\t'}
+DIGITS   = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
+NAMESET  = DIGITS | set(_letters) | {'$', '_'}
 MAXSTRLEN = None
 
+def isdigit(s: str) -> bool:
+    return s in DIGITS
 class _tokenns:
     def __init__(self, name='namespace'):
         self.__name = name
@@ -102,6 +108,8 @@ class _Token:
         return self.cnt
     def __eq__(self, other):
         return self.content == getattr(other, 'content', 0)
+    def __hash__(self):
+        return hash(self.content)
 @token
 class Name(_Token):
     def __init__(self, name: str):
@@ -110,21 +118,30 @@ class Name(_Token):
     @property
     def content(self):
         return self.name
+    @staticmethod
+    def isname(s: str):
+        if s[0] not in NAMESET - DIGITS:
+            return False
+        return not tuple(filter(lambda x: x not in NAMESET, s))
 del Name
 @token
 class Op(_Token):
-    def __init__(self, op: str, left=None, right=None, middle=None, n=-1):
+    def __init__(self, op: str, /):
         self._setid()
         self.op = i(op)
-        if n is None or n <= 0:
-            n = (left is not None) + (middle is not None) + (right is not None)
-        if n == 0:
-            raise ValueError('No sides provided')
-        try:
-            self.type = NDIC[n][op]
-        except KeyError as e:
-            raise ValueError(f'Invalid operator {op!r} for n={n!r}') from e
-        self.left, self.middle, self.right = left, middle, right
+    # MV: The grouping of operators and sides should be done by the parser.
+    # def __init__(self, op: str, left=None, right=None, middle=None, n=-1):
+    #     self._setid()
+    #     self.op = i(op)
+    #     if n is None or n <= 0:
+    #         n = (left is not None) + (middle is not None) + (right is not None)
+    #     if n == 0:
+    #         raise ValueError('No sides provided')
+    #     try:
+    #         self.type = NDIC[n][op]
+    #     except KeyError as e:
+    #         raise ValueError(f'Invalid operator {op!r} for n={n!r}') from e
+    #     self.left, self.middle, self.right = left, middle, right
     @staticmethod
     def isop(s: str, n: int|None = None):
         s = i(s)
@@ -146,40 +163,73 @@ class Op(_Token):
             else:
                 return True
     def __str__(self):
-        lis = [repr(self.op)]
-        if self.left is not None:
-            lis.append(f'left={self.left!s}')
-        if self.middle is not None:
-            lis.append(f'middle={self.middle!s}')
-        if self.right is not None:
-            lis.append(f'right={self.right!s}')
-        return f'{self.__class__.__name__}({", ".join(lis)})'
+        return f'{self.__class__.__name__}({self.op!r})'
     def __repr__(self):
-        return f'{self._cls_name(self.__class__)}({self.op!r}, left={self.left!r}, middle={self.middle!r}, right={self.right!r})'
+        return f'{self._cls_name(self.__class__)}({self.op!r})'
     @property
     def content(self):
         return self.op
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return False
-        return ((self.left, self.middle, self.right, self.op) ==
-                (other.left, other.middle, other.right, other.op))
+        return self.op == other.op
 del Op
 @token
 class Keyword(_Token):
     def __init__(self, keyword: str):
-        if keyword not in KEYWORDS:
-            warning(f"Invalid keyword: {keyword!r}")
+        if not self.iskeyword(keyword):
+            warning(f"Invalid keyword: {keyword!r}", stacklevel=5)
         self.keyword = keyword
     @property
     def content(self):
         return self.keyword
+    @staticmethod
+    def iskeyword(s):
+        return s in KEYWORDS
 del Keyword
 @token
 class String(_Token):
     pass
 del String
-
+@token
+class Integer(_Token):
+    def __init__(self, n: str):
+        if not self.isint(n):
+            warning(f"Invalid integer: {n!r}", stacklevel=5)
+        self.n = n
+    @property
+    def content(self):
+        return self.n
+    @staticmethod
+    def isint(s):
+        return not tuple(filter(lambda x: not isdigit(x), s))
+del Integer
+@token
+class Float(_Token):
+    def __init__(self, f: str):
+        if not self.isfloat(f):
+            warning(f"Invalid float: {f!r}", stacklevel=5)
+        self.f = f
+    @property
+    def content(self):
+        return self.f
+    @staticmethod
+    def isfloat(f: str):
+        if '.' not in f:
+            return False
+        parts = tuple(filter(None, f.split('.')))
+        if f.index('.') == 0:
+            parts = ['0', *parts]
+        elif f.index('.')+1 == len(f):
+            parts = [*parts, '0']
+        if len(parts) > 2:
+            return False
+        return token.Integer.isint(parts[0]) and token.Integer.isint(parts[1])
+MAPPING = {token.Op.isop: token.Op,
+           token.Float.isfloat: token.Float,
+           token.Integer.isint: token.Integer,
+           token.Keyword.iskeyword: token.Keyword,
+           token.Name.isname: token.Name}
 def lex(code: str) -> list[token.Token]:
     if not code.strip():
         return [code]
@@ -189,17 +239,47 @@ def lex(code: str) -> list[token.Token]:
     while True:
         if end > len(code):
             break
+        if end <= start:
+            break  # TODO
+        valid = False
         s = code[start:end]
-        if (s.startswith(STRSTART) and
-            s[0] == s[-1]          and
-            s.count(s[0]) == 2     and
+        if (s.startswith(STRSTART)  and
+            s[0] == s[-1]           and
+            (c:=s.count(s[0])) >= 2 and
             s.endswith(STREND)):
             # String token
             if '\\' not in s:
+                if c > 2:
+                    continue
                 # No escapes
                 tokens.append(token.String(s[1:-1]))
-                start = end+1
-                end += 2
+                valid = True
+            else:
+                for o, n in ESCAPE_MAPPING.items():
+                    if o in {f'\\{ss}' for ss in STREND}:
+                        if o in s:
+                            s = s.replace(o, n)
+                            c -= 1
+                        else:
+                            continue
+                    else:
+                        s = s.replace(o, n)
+                s = s.replace(RESERVED, '')
+                print(f'{s=}')
+                if c == 2:
+                    tokens.append(token.String(s[1:-1]))
+                    valid = True
+        else:
+            for func in MAPPING:
+                if func(s):
+                    tokens.append(MAPPING[func](s))
+                    valid = True
+                    break
+        if valid:
+            start = end
+            end = len(code)
+        else:
+            end -= 1
     return tokens
 # def lex(code: str) -> list[token.Token]:
 #     tokens = deque()
@@ -258,8 +338,9 @@ if __name__ == '__main__' and DEBUG >= 2:
     print(x)
     y = token.Name("y")
     print(y)
-    z = token.Op("*", x, y)
+    z = token.Op("*")
     print(z)
     a = token.Kw('iXf')
     print(a)
-    print(lex('"x"'))
+    print(lex(r'"\nx"+"y"'))
+    print(lex('-156*-.657>>3^+x*2.48-15*-394.48:'))
