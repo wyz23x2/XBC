@@ -41,7 +41,8 @@ SCOMMENT  = "#*"
 ECOMMENT  = "*#"
 STRSTART  = "'", '"'
 STREND    = STRSTART
-ESCAPE_MAPPING = {'\\\\': '\\',  # !! This must be the first.
+RESERVED  = '\x01'
+ESCAPE_MAPPING = {'\\\\': f'\\{RESERVED}',  # !! This must be the first.
                   r'\n': '\n',
                   r'\r': '\r',
                   r'\t': '\t'}
@@ -191,15 +192,32 @@ def lex(code: str) -> list[token.Token]:
             break  # TODO
         valid = False
         s = code[start:end]
-        if (s.startswith(STRSTART) and
-            s[0] == s[-1]          and
-            s.count(s[0]) == 2     and
+        if (s.startswith(STRSTART)  and
+            s[0] == s[-1]           and
+            (c:=s.count(s[0])) >= 2 and
             s.endswith(STREND)):
             # String token
             if '\\' not in s:
+                if c > 2:
+                    continue
                 # No escapes
                 tokens.append(token.String(s[1:-1]))
                 valid = True
+            else:
+                for o, n in ESCAPE_MAPPING.items():
+                    if o in {f'\\{ss}' for ss in STREND}:
+                        if o in s:
+                            s = s.replace(o, n)
+                            c -= 1
+                        else:
+                            continue
+                    else:
+                        s = s.replace(o, n)
+                s = s.replace(RESERVED, '')
+                print(f'{s=}')
+                if c == 2:
+                    tokens.append(token.String(s[1:-1]))
+                    valid = True
         elif token.Op.isop(s):
             tokens.append(token.Op(s))
             valid = True
@@ -270,4 +288,4 @@ if __name__ == '__main__' and DEBUG >= 2:
     print(z)
     a = token.Kw('iXf')
     print(a)
-    print(lex('"x"+"y"'))
+    print(lex(r'"\nx"+"y"'))
