@@ -39,6 +39,12 @@ KEYWORDS  = frozenset({"if"})
 LCOMMENT  = "#"
 SCOMMENT  = "#*"
 ECOMMENT  = "*#"
+STRSTART  = "'", '"'
+STREND    = STRSTART
+ESCAPE_MAPPING = {'\\\\': '\\',  # !! This must be the first.
+                  r'\n': '\n',
+                  r'\r': '\r',
+                  r'\t': '\t'}
 MAXSTRLEN = None
 
 class _tokenns:
@@ -175,55 +181,76 @@ class String(_Token):
 del String
 
 def lex(code: str) -> list[token.Token]:
+    if not code.strip():
+        return [code]
     tokens = deque()
-    lines = code.splitlines()
-    in_string = False
-    in_comment = False
-    this_str = deque(maxlen=MAXSTRLEN)
-    str_escaping = False
-    str_start = None
-    prev = []
-    strpush = this_str.append
-    for line in lines:
-        if line.startswith(LCOMMENT) and not in_string: continue
-        for char in line:
-            prev.append(char)
-            ps = ''.join(prev)
-            if str_escaping:
-                # FIXME: Multi char escapes unsupported
-                match char:
-                    case 'n': strpush('\n')
-                    case 'r': strpush('\r')
-                    case 't': strpush('\t')
-                    case 'b': strpush('\b')
-                    case 'f': strpush('\f')
-                    case '"': strpush('"')
-                    case "'": strpush("'")
-                    case '\\': strpush('\\')
-                    case _:
-                        ...
-                        strpush('\\')
-                        strpush(char)
-            if in_string and not in_comment:
-                if char == '\\':
-                    str_escaping = True
-                    continue
-                if char == str_start:
-                    tokens.append(token.String(''.join(this_str)))
-                    this_str.clear()
-                    in_string = False
-                else:
-                    strpush(char)
-            elif ps.endswith(ECOMMENT):
-                in_comment = False
-                prev.clear()
-                continue
-            elif in_comment:
-                continue
-            elif ps.endswith(SCOMMENT):
-                in_comment = True
-            else:
-                ...
+    start = 0
+    end = len(code)
+    while True:
+        if end > len(code):
+            break
+        s = code[start:end]
+        if (s.startswith(STRSTART) and
+            s[0] == s[-1]          and
+            s.count(s[0]) == 2     and
+            s.endswith(STREND)):
+            # String token
+            if '\\' not in s:
+                # No escapes
+                tokens.append(token.String(s[1:-1]))
+                start = end+1
+                end += 2
+    return tokens
+# def lex(code: str) -> list[token.Token]:
+#     tokens = deque()
+#     lines = code.splitlines()
+#     in_string = False
+#     in_comment = False
+#     this_str = deque(maxlen=MAXSTRLEN)
+#     str_escaping = False
+#     str_start = None
+#     prev = []
+#     strpush = this_str.append
+#     for line in lines:
+#         if line.startswith(LCOMMENT) and not in_string: continue
+#         for char in line:
+#             prev.append(char)
+#             ps = ''.join(prev)
+#             if str_escaping:
+#                 # FIXME: Multi char escapes unsupported
+#                 match char:
+#                     case 'n': strpush('\n')
+#                     case 'r': strpush('\r')
+#                     case 't': strpush('\t')
+#                     case 'b': strpush('\b')
+#                     case 'f': strpush('\f')
+#                     case '"': strpush('"')
+#                     case "'": strpush("'")
+#                     case '\\': strpush('\\')
+#                     case _:
+#                         ...
+#                         strpush('\\')
+#                         strpush(char)
+#             if in_string and not in_comment:
+#                 if char == '\\':
+#                     str_escaping = True
+#                     continue
+#                 if char == str_start:
+#                     tokens.append(token.String(''.join(this_str)))
+#                     this_str.clear()
+#                     in_string = False
+#                 else:
+#                     strpush(char)
+#             elif ps.endswith(ECOMMENT):
+#                 in_comment = False
+#                 prev.clear()
+#                 continue
+#             elif in_comment:
+#                 continue
+#             elif ps.endswith(SCOMMENT):
+#                 in_comment = True
+#             else:
+#                 ...
 
 
 if __name__ == '__main__' and DEBUG >= 2:
@@ -235,3 +262,4 @@ if __name__ == '__main__' and DEBUG >= 2:
     print(z)
     a = token.Kw('iXf')
     print(a)
+    print(lex('"x"'))
