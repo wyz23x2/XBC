@@ -1,7 +1,7 @@
 from main import *
 from utils import *
 from sys import intern as i
-from string import ascii_letters as _letters
+from string import ascii_letters as _letters, whitespace as _ws
 from collections import deque
 
 # Binary Operators #
@@ -278,6 +278,9 @@ def lex(code: str) -> list[token.Token]:
         if valid:
             start = end
             end = len(code)
+        elif s in _ws or all(map(_ws.__contains__, s)):
+            start += len(s)
+            end = len(code)
         else:
             end -= 1
     return tokens
@@ -343,4 +346,4 @@ if __name__ == '__main__' and DEBUG >= 2:
     a = token.Kw('iXf')
     print(a)
     print(lex(r'"\nx"+"y"'))
-    print(lex('-156*-.657>>3^+x*2.48-15*-394.48:'))
+    print(lex('if -156*-.657>>3^+x*2.48-15*-394.48:'))
