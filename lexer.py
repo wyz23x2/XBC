@@ -48,10 +48,10 @@ ECOMMENT  = "*#"
 STRSTART  = "'", '"'
 STREND    = STRSTART
 RESERVED  = '\x03'
-ESCAPE_MAPPING = {'\\\\': f'\\{RESERVED}',  # !! This must be the first.
-                  r'\n': '\n',
-                  r'\r': '\r',
-                  r'\t': '\t'}
+ESCAPE_MAPPING = {i('\\\\'): f'\\{RESERVED}',  # !! This must be the first.
+                  i(r'\n'): '\n',
+                  i(r'\r'): '\r',
+                  i(r'\t'): '\t'}
 DIGITS    = frozenset(('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'))
 NAMESET   = frozenset(DIGITS | frozenset(_letters) | frozenset(('$', '_')))
 PAIRS     = frozenset((('(', ')'), ('[', ']'), ('{', '}')))
@@ -314,7 +314,7 @@ def lex(code: str) -> list[token.Token]:
                 valid = 1
             else:
                 for o, n in ESCAPE_MAPPING.items():
-                    if o in {f'\\{ss}' for ss in STREND}:
+                    if o in frozenset(i(f'\\{ss}') for ss in STREND):
                         if o in s:
                             s = s.replace(o, n)
                             c -= 1
