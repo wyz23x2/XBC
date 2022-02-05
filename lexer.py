@@ -42,13 +42,14 @@ SCOMMENT  = "#*"
 ECOMMENT  = "*#"
 STRSTART  = "'", '"'
 STREND    = STRSTART
-RESERVED  = '\x01'
+RESERVED  = '\x03'
 ESCAPE_MAPPING = {'\\\\': f'\\{RESERVED}',  # !! This must be the first.
                   r'\n': '\n',
                   r'\r': '\r',
                   r'\t': '\t'}
-DIGITS   = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
-NAMESET  = DIGITS | set(_letters) | {'$', '_'}
+DIGITS    = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
+NAMESET   = DIGITS | set(_letters) | {'$', '_'}
+PAIRS     = {('(', ')'), ('[', ']'), ('{', '}')}
 MAXSTRLEN = None
 
 def isdigit(s: str) -> bool:
@@ -225,6 +226,28 @@ class Float(_Token):
         if len(parts) > 2:
             return False
         return token.Integer.isint(parts[0]) and token.Integer.isint(parts[1])
+del Float
+@token
+class Group(_Token):
+    def __init__(self, *tokens, bracket='('):
+        self.tokens = list(tokens)
+        self.bracket = bracket
+    def add(self, *tokens):
+        self.tokens.extend(tokens)
+    @property
+    def content(self):
+        return self.tokens
+    def __iter__(self):
+        return self.tokens
+    def __getitem__(self, idx):
+        return self.tokens[idx]
+    def __len__(self):
+        return len(tuple(self))
+    def __str__(self):
+        return f'{self.__class__.__name__}({", ".join(map(str, self.tokens))}, bracket={self.bracket!r})'
+    def __repr__(self):
+        return f'{self._cls_name(self.__class__)}({", ".join(map(repr, self.tokens))}, bracket={self.bracket!r})'
+del Group
 MAPPING = {token.Op.isop: token.Op,
            token.Float.isfloat: token.Float,
            token.Integer.isint: token.Integer,
@@ -236,15 +259,30 @@ def lex(code: str) -> list[token.Token]:
     tokens = deque()
     start = 0
     end = len(code)
+    group_se = deque()
+    depth = 0
+    def append(x):
+        nonlocal tokens, group_se
+        if depth <= 0:
+            tokens.append(x)
+        else:
+            t = tokens[-1]
+            for _ in range(1, depth):
+                t = t[-1]
+            t.add(x)
     while True:
         if end > len(code):
             break
         if end <= start:
             if start < len(code):
-                tokens.append(token.Token(code[start]))
+                append(token.Token(code[start]))
             break
-        valid = False
+        valid = 0
         s = code[start:end]
+        # print(f'{start=} {end=} {s=!r}')
+        if depth and start >= group_se[-1][1]:
+            depth -= 1
+            group_se.pop()
         if (s.startswith(STRSTART)  and
             s[0] == s[-1]           and
             (c:=s.count(s[0])) >= 2 and
@@ -254,8 +292,8 @@ def lex(code: str) -> list[token.Token]:
                 if c > 2:
                     continue
                 # No escapes
-                tokens.append(token.String(s[1:-1]))
-                valid = True
+                append(token.String(s[1:-1]))
+                valid = 1
             else:
                 for o, n in ESCAPE_MAPPING.items():
                     if o in {f'\\{ss}' for ss in STREND}:
@@ -267,77 +305,42 @@ def lex(code: str) -> list[token.Token]:
                     else:
                         s = s.replace(o, n)
                 s = s.replace(RESERVED, '')
-                print(f'{s=}')
                 if c == 2:
-                    tokens.append(token.String(s[1:-1]))
-                    valid = True
+                    append(token.String(s[1:-1]))
+                    valid = 1
+        elif (s[0], s[-1]) in PAIRS:
+            group_se.append((start, end))
+            append(token.Group(bracket=s[0]))
+            depth += 1
+            valid = 2
         else:
             for func in MAPPING:
                 if func(s):
-                    tokens.append(MAPPING[func](s))
-                    valid = True
+                    append(MAPPING[func](s))
+                    valid = 1
                     break
         if valid:
-            start = end
-            end = len(code)
+            if valid == 2:
+                start += 1
+                end -= 1
+            elif depth:
+                start = end
+                if end < group_se[-1][1]-1:
+                    end = group_se[-1][1]-1
+                else:
+                    start += 1
+                    end = len(code)
+            else:
+                start = end
+                end = len(code)
         elif s in _ws or all(map(_ws.__contains__, s)):
             start += len(s)
             end = len(code)
         else:
             end -= 1
     return tokens
-# def lex(code: str) -> list[token.Token]:
-#     tokens = deque()
-#     lines = code.splitlines()
-#     in_string = False
-#     in_comment = False
-#     this_str = deque(maxlen=MAXSTRLEN)
-#     str_escaping = False
-#     str_start = None
-#     prev = []
-#     strpush = this_str.append
-#     for line in lines:
-#         if line.startswith(LCOMMENT) and not in_string: continue
-#         for char in line:
-#             prev.append(char)
-#             ps = ''.join(prev)
-#             if str_escaping:
-#                 # FIXME: Multi char escapes unsupported
-#                 match char:
-#                     case 'n': strpush('\n')
-#                     case 'r': strpush('\r')
-#                     case 't': strpush('\t')
-#                     case 'b': strpush('\b')
-#                     case 'f': strpush('\f')
-#                     case '"': strpush('"')
-#                     case "'": strpush("'")
-#                     case '\\': strpush('\\')
-#                     case _:
-#                         ...
-#                         strpush('\\')
-#                         strpush(char)
-#             if in_string and not in_comment:
-#                 if char == '\\':
-#                     str_escaping = True
-#                     continue
-#                 if char == str_start:
-#                     tokens.append(token.String(''.join(this_str)))
-#                     this_str.clear()
-#                     in_string = False
-#                 else:
-#                     strpush(char)
-#             elif ps.endswith(ECOMMENT):
-#                 in_comment = False
-#                 prev.clear()
-#                 continue
-#             elif in_comment:
-#                 continue
-#             elif ps.endswith(SCOMMENT):
-#                 in_comment = True
-#             else:
-#                 ...
 
 
 if __name__ == '__main__' and DEBUG >= 2:
     print(lex(r'"\nx"+"y"'))
-    print(lex('if -156*-.657>>3^+x*2.48-15*-394.48:'))
+    print(lex('if (-156*-(.657>>3^+x*2.48)-15)*-394.48:'))
