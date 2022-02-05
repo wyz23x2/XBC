@@ -57,7 +57,6 @@ NAMESET   = frozenset(DIGITS | frozenset(_letters) | frozenset(('$', '_')))
 PAIRS     = frozenset((('(', ')'), ('[', ']'), ('{', '}')))
 EB        = frozenset(p[1] for p in PAIRS)
 CAPTURE   = frozenset((':', ',', '\n', ';'))
-MAXSTRLEN = None
 
 def isdigit(s: str) -> bool:
     return s in DIGITS
