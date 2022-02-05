@@ -1,3 +1,4 @@
+from __future__ import annotations
 from main import *
 from utils import *
 from sys import intern as i
@@ -50,6 +51,7 @@ ESCAPE_MAPPING = {'\\\\': f'\\{RESERVED}',  # !! This must be the first.
 DIGITS    = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
 NAMESET   = DIGITS | set(_letters) | {'$', '_'}
 PAIRS     = {('(', ')'), ('[', ']'), ('{', '}')}
+EB        = {p[1] for p in PAIRS}
 MAXSTRLEN = None
 
 def isdigit(s: str) -> bool:
@@ -271,6 +273,7 @@ def lex(code: str) -> list[token.Token]:
                 t = t[-1]
             t.add(x)
     while True:
+        # print(f'{start=} {end=}', end=' ')
         if end > len(code):
             break
         if end <= start:
@@ -279,7 +282,7 @@ def lex(code: str) -> list[token.Token]:
             break
         valid = 0
         s = code[start:end]
-        # print(f'{start=} {end=} {s=!r}')
+        # print(f'{s=!r}')
         if depth and start >= group_se[-1][1]:
             depth -= 1
             group_se.pop()
@@ -333,14 +336,26 @@ def lex(code: str) -> list[token.Token]:
             else:
                 start = end
                 end = len(code)
+                while start < len(code) and (code[start] in _ws or code[start] in EB):
+                    start += 1
         elif s in _ws or all(map(_ws.__contains__, s)):
             start += len(s)
             end = len(code)
         else:
             end -= 1
+            while start < len(code) and (code[start] in _ws or code[start] in EB):
+                start += 1
     return tokens
-
+def Lex(code, showinput=False):
+    from time import perf_counter
+    t = perf_counter()
+    x = lex(code)
+    t = perf_counter()-t
+    if showinput:
+        print(f'  lex({code!r})\n>', end=' ')
+    print(f'{x!r}\nTime used: {t:.5f}s')
+    return x, t
 
 if __name__ == '__main__' and DEBUG >= 2:
-    print(lex(r'"\nx"+"y"'))
-    print(lex('if (-156*-(.657>>3^+x*2.48)-15)*-394.48:'))
+    Lex(r'"\\\nx"+"y"')
+    Lex('if (-156*-(.657>>3^+x*2.48)-15)*-394.48-3+(10945)*8-6>>2 > 59583*(455-(34858+int("34757")/int("72")))*474)-4958<<(50/5):')
