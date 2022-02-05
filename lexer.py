@@ -271,9 +271,10 @@ MAPPING = {token.Op.isop: token.Op,
 def lex(code: str) -> list[token.Token]:
     if not code.strip():
         return []
-    tokens = deque()
+    lc = len(code)
+    tokens = deque(maxlen=lc)
     start = 0
-    end = len(code)
+    end = lc
     group_se = deque()
     depth = 0
     def append(x):
@@ -286,12 +287,12 @@ def lex(code: str) -> list[token.Token]:
                 t = t[-1]
             t.add(x)
     while True:
-        if end > len(code):
+        if end > lc:
             break
         if end <= start:
-            if start >= len(code):
+            if start >= lc:
                 break
-            end = len(code)
+            end = lc
             start += 1
         valid = 0
         s = code[start:end]
@@ -345,18 +346,18 @@ def lex(code: str) -> list[token.Token]:
                     end = group_se[-1][1]-1
                 else:
                     start += 1
-                    end = len(code)
+                    end = lc
             else:
                 start = end
-                end = len(code)
-                while start < len(code) and (code[start] in _ws or code[start] in EB):
+                end = lc
+                while start < lc and (code[start] in _ws or code[start] in EB):
                     start += 1
         elif s in _ws or all(map(_ws.__contains__, s)):
             start += len(s)
-            end = len(code)
+            end = lc
         else:
             end -= 1
-            while start < len(code) and (code[start] in _ws or code[start] in EB):
+            while start < lc and (code[start] in _ws or code[start] in EB):
                 start += 1
     return tokens
 def Lex(code, showinput=False):
