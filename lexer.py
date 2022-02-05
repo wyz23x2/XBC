@@ -52,10 +52,11 @@ ESCAPE_MAPPING = {'\\\\': f'\\{RESERVED}',  # !! This must be the first.
                   r'\n': '\n',
                   r'\r': '\r',
                   r'\t': '\t'}
-DIGITS    = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
-NAMESET   = DIGITS | set(_letters) | {'$', '_'}
-PAIRS     = {('(', ')'), ('[', ']'), ('{', '}')}
-EB        = {p[1] for p in PAIRS}
+DIGITS    = frozenset(('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'))
+NAMESET   = frozenset(DIGITS | frozenset(_letters) | frozenset(('$', '_')))
+PAIRS     = frozenset((('(', ')'), ('[', ']'), ('{', '}')))
+EB        = frozenset(p[1] for p in PAIRS)
+CAPTURE   = frozenset((':', ',', '\n', ';'))
 MAXSTRLEN = None
 
 def isdigit(s: str) -> bool:
@@ -336,6 +337,10 @@ def lex(code: str) -> list[token.Token]:
                     append(MAPPING[func](s))
                     valid = 1
                     break
+            else:
+                if s in CAPTURE:
+                    append(token.Token(s))
+                    valid = 1
         if valid:
             if valid == 2:
                 start += 1
