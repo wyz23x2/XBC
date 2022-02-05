@@ -4,6 +4,10 @@ from utils import *
 from sys import intern as i
 from string import ascii_letters as _letters, whitespace as _ws
 from collections import deque
+try:
+    from functools import cache
+except ImportError:
+    from functools import lru_cache as cache
 
 # Binary Operators #
 ADD    = 0x1   #  +
@@ -122,7 +126,10 @@ class Name(_Token):
     def content(self):
         return self.name
     @staticmethod
+    @cache
     def isname(s: str):
+        if not s:
+            return False
         if s[0] not in NAMESET - DIGITS:
             return False
         return not tuple(filter(lambda x: x not in NAMESET, s))
@@ -146,6 +153,7 @@ class Op(_Token):
     #         raise ValueError(f'Invalid operator {op!r} for n={n!r}') from e
     #     self.left, self.middle, self.right = left, middle, right
     @staticmethod
+    @cache
     def isop(s: str, n: int|None = None):
         s = i(s)
         if n is None:
@@ -187,6 +195,7 @@ class Keyword(_Token):
     def content(self):
         return self.keyword
     @staticmethod
+    @cache
     def iskeyword(s):
         return s in KEYWORDS
 del Keyword
@@ -204,7 +213,10 @@ class Integer(_Token):
     def content(self):
         return self.n
     @staticmethod
+    @cache
     def isint(s):
+        if not s:
+            return False
         return not tuple(filter(lambda x: not isdigit(x), s))
 del Integer
 @token
@@ -217,6 +229,7 @@ class Float(_Token):
     def content(self):
         return self.f
     @staticmethod
+    @cache
     def isfloat(f: str):
         if '.' not in f:
             return False
@@ -273,16 +286,16 @@ def lex(code: str) -> list[token.Token]:
                 t = t[-1]
             t.add(x)
     while True:
-        # print(f'{start=} {end=}', end=' ')
         if end > len(code):
             break
         if end <= start:
-            if start < len(code):
-                append(token.Token(code[start]))
-            break
+            if start >= len(code):
+                break
+            end = len(code)
+            start += 1
         valid = 0
         s = code[start:end]
-        # print(f'{s=!r}')
+        # print(f'{start=!r} {end=!r} {s=!r}')
         if depth and start >= group_se[-1][1]:
             depth -= 1
             group_se.pop()
@@ -311,7 +324,7 @@ def lex(code: str) -> list[token.Token]:
                 if c == 2:
                     append(token.String(s[1:-1]))
                     valid = 1
-        elif (s[0], s[-1]) in PAIRS:
+        elif s[1:] and (s[0], s[-1]) in PAIRS:
             group_se.append((start, end))
             append(token.Group(bracket=s[0]))
             depth += 1
@@ -357,5 +370,5 @@ def Lex(code, showinput=False):
     return x, t
 
 if __name__ == '__main__' and DEBUG >= 2:
-    Lex(r'"\\\nx"+"y"')
-    Lex('if (-156*-(.657>>3^+x*2.48)-15)*-394.48-3+(10945)*8-6>>2 > 59583*(455-(34858+int("34757")/int("72")))*474)-4958<<(50/5):')
+    # Lex(r'"\\\nx"+"y"')
+    Lex('if (-156*-(.657>>3^+x*2.48)-15)*-394.48-3+(10945)*8-6>>2 > 59583*(455-(34858+int("34757")/int("7\\n")[0]))*474)-4958<<(50/5):')
