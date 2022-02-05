@@ -367,7 +367,7 @@ def Lex(code, showinput=False):
     t = perf_counter()-t
     if showinput:
         print(f'  lex({code!r})\n>', end=' ')
-    print(f'{x!r}\nTime used: {t:.5f}s')
+    print(f'{x!r}\nTime used: {t:.8f}s')
     return x, t
 
 if __name__ == '__main__' and DEBUG >= 2:
