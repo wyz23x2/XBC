@@ -226,6 +226,17 @@ class Float(_Token):
             return False
         return token.Integer.isint(parts[0]) and token.Integer.isint(parts[1])
 del Float
+@token
+class Block(_Token):
+    def __init__(self, *tokens):
+        self.tokens = list(tokens)
+    def add(self, *tokens):
+        self.tokens.extend(tokens)
+    def __iter__(self):
+        return self.tokens
+    def __len__(self):
+        return len(tuple(self))
+del Block
 MAPPING = {token.Op.isop: token.Op,
            token.Float.isfloat: token.Float,
            token.Integer.isint: token.Integer,
