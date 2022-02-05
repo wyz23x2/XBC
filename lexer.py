@@ -4,6 +4,10 @@ from utils import *
 from sys import intern as i
 from string import ascii_letters as _letters, whitespace as _ws
 from collections import deque
+try:
+    from functools import cache
+except ImportError:
+    from functools import lru_cache as cache
 
 # Binary Operators #
 ADD    = 0x1   #  +
@@ -122,6 +126,7 @@ class Name(_Token):
     def content(self):
         return self.name
     @staticmethod
+    @cache
     def isname(s: str):
         if not s:
             return False
@@ -148,6 +153,7 @@ class Op(_Token):
     #         raise ValueError(f'Invalid operator {op!r} for n={n!r}') from e
     #     self.left, self.middle, self.right = left, middle, right
     @staticmethod
+    @cache
     def isop(s: str, n: int|None = None):
         s = i(s)
         if n is None:
@@ -189,6 +195,7 @@ class Keyword(_Token):
     def content(self):
         return self.keyword
     @staticmethod
+    @cache
     def iskeyword(s):
         return s in KEYWORDS
 del Keyword
@@ -206,6 +213,7 @@ class Integer(_Token):
     def content(self):
         return self.n
     @staticmethod
+    @cache
     def isint(s):
         if not s:
             return False
@@ -221,6 +229,7 @@ class Float(_Token):
     def content(self):
         return self.f
     @staticmethod
+    @cache
     def isfloat(f: str):
         if '.' not in f:
             return False
@@ -361,5 +370,5 @@ def Lex(code, showinput=False):
     return x, t
 
 if __name__ == '__main__' and DEBUG >= 2:
-    Lex(r'"\\\nx"+"y"')
-    Lex('if (-156*-(.657>>3^+x*2.48)-15)*-394.48-3+(10945)*8-6>>2 > 59583*(455-(34858+int("34757")/int("72")))*474)-4958<<(50/5):')
+    # Lex(r'"\\\nx"+"y"')
+    Lex('if (-156*-(.657>>3^+x*2.48)-15)*-394.48-3+(10945)*8-6>>2 > 59583*(455-(34858+int("34757")/int("7\\n")[0]))*474)-4958<<(50/5):')
