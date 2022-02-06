@@ -1,13 +1,17 @@
 from __future__ import annotations
 from main import *
 from utils import *
-from sys import intern as i
+from sys import intern as i, implementation
+from itertools import chain
 from string import ascii_letters as _letters, whitespace as _ws
 from collections import deque
-try:
-    from functools import cache
-except ImportError:
-    from functools import lru_cache as cache
+if implementation.name == 'pypy':
+    cache = (lambda x: x)
+else:
+    try:
+        from functools import cache
+    except ImportError:
+        from functools import lru_cache as cache
 
 # Binary Operators #
 ADD    = 0x1   #  +
@@ -41,6 +45,7 @@ NDIC  = {1: {i("+"): POS, i("-"): NEG, i("!"): NOT, i("@"): REF},
              i("<"): LT, i("<="): LE, i("=="): EQ, i("!="): NE,
              i(">="): GE, i(">"): GT, i("~"): RANGE},
          }
+NV = frozenset(chain(*NDIC.values()))
 KEYWORDS  = frozenset({"if"})
 LCOMMENT  = "#"
 SCOMMENT  = "#*"
@@ -54,9 +59,11 @@ ESCAPE_MAPPING = {i('\\\\'): f'\\{RESERVED}',  # !! This must be the first.
                   i(r'\t'): '\t'}
 DIGITS    = frozenset(('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'))
 NAMESET   = frozenset(DIGITS | frozenset(_letters) | frozenset(('$', '_')))
+NDNS = NAMESET - DIGITS
 PAIRS     = frozenset((('(', ')'), ('[', ']'), ('{', '}')))
 EB        = frozenset(p[1] for p in PAIRS)
 CAPTURE   = frozenset((':', ',', '\n', ';'))
+del implementation, chain, _letters
 
 @cache
 def isdigit(s: str) -> bool:
@@ -129,11 +136,9 @@ class Name(_Token):
     @staticmethod
     @cache
     def isname(s: str):
-        if not s:
+        if s[0] not in NDNS:
             return False
-        if s[0] not in NAMESET - DIGITS:
-            return False
-        return not tuple(filter(lambda x: x not in NAMESET, s))
+        return not frozenset(s)-NAMESET
 del Name
 @token
 class Op(_Token):
@@ -156,9 +161,9 @@ class Op(_Token):
     @staticmethod
     @cache
     def isop(s: str, n: int|None = None):
-        s = i(s)
+        # s = i(s)
         if n is None:
-            return bool(tuple(filter(lambda x: s in x, NDIC.values())))
+            return s in NV
         else:
             return n in NDIC and s in NDIC[n]
     def __str__(self):
@@ -225,14 +230,15 @@ class Float(_Token):
     def isfloat(f: str):
         if '.' not in f:
             return False
-        parts = tuple(filter(None, f.split('.')))
-        if f.index('.') == 0:
-            parts = ['0', *parts]
-        elif f.index('.')+1 == len(f):
-            parts = [*parts, '0']
-        if len(parts) > 2:
-            return False
-        return token.Integer.isint(parts[0]) and token.Integer.isint(parts[1])
+        c = 0
+        for x in f:
+            if f == '.':
+                c += 1
+                if c > 1:
+                    return False
+            elif not isdigit(x):
+                return False
+        return True
 del Float
 @token
 class Group(_Token):
@@ -255,11 +261,11 @@ class Group(_Token):
     def __repr__(self):
         return f'{self._cls_name(self.__class__)}({", ".join(map(repr, self.tokens))}, bracket={self.bracket!r})'
 del Group
-MAPPING = {token.Op.isop: token.Op,
+MAPPING = {token.Keyword.iskeyword: token.Keyword,
+           token.Op.isop: token.Op,
+           token.Integer.isint: token.Integer,
            token.Float.isfloat: token.Float,
-           token.Keyword.iskeyword: token.Keyword,
-           token.Name.isname: token.Name,
-           token.Integer.isint: token.Integer}
+           token.Name.isname: token.Name}
 def lex(code: str) -> list[token.Token]:
     if not code.strip():
         return []
@@ -297,8 +303,9 @@ def lex(code: str) -> list[token.Token]:
             group_se.pop()
         if (s.startswith(STRSTART)  and
             s[0] == s[-1]           and
-            (c:=s.count(s[0])) >= 2 and
-            s.endswith(STREND)):
+            s.endswith(STREND)      and
+            (c:=s.count(s[0])) >= 2
+            ):
             # String token
             if '\\' not in s:
                 if c > 2:
@@ -351,7 +358,7 @@ def lex(code: str) -> list[token.Token]:
                 end = lc
                 while start < lc and (code[start] in _ws or code[start] in EB):
                     start += 1
-        elif s in _ws or all(map(_ws.__contains__, s)):
+        elif s.isspace():
             start += len(s)
             end = lc
         else:
@@ -377,6 +384,5 @@ if __name__ == '__main__' and DEBUG >= 2:
         '-4958<<(50/5+59583*(455-(34858+int("34757")/int("7\\n")[0]))*474)-4958<<(50/5)))\n(4585842348586<<39/5)^(577667405820-58.394+3939+" 5\\n"[1]-485821.3948-59*4)+7747028.494+(((((((717779688)-6)*5)^27)%4983)-21039)+39485<<2)'
         '\n77.5+((((((((((((((((8<<1))))))))))))))))\nprint("\\r\\n\\\\\\n")'
         '((((((((((((((((((((((((((((3<<7))))))))))))))))))))))))))))\n'
-        '[([{([{[((([{[[[[((({{[([(({{[]}}))])]}})))]]]]}])))]}])}])]\n'
         '[([{([{[((([{[[[[((({{[([(({{[]}}))])]}})))]]]]}])))]}])}])]\n'
         '1[2[3[4[5[6[7[8[9[10[11[12[13[14[15]16]17]18]19]20]21]22]23]24]25]26]27]28]29', showoutput=False)
