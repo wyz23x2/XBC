@@ -6,7 +6,7 @@ if sys.argv[1:]:
 else:
     fn = 'lexer.py'
 ct, ft, pt = [], [], []
-for c in range(2):
+for c in range(10):
     stream = subprocess.getoutput(f'py -OO ./{fn}')
     cpython = stream.split(' ')[-1].rstrip().rstrip('s')
     stream = subprocess.getoutput(fr'"D:\Download\cpython-3.10.0a6\cpython-3.10.0a6\PCbuild\amd64\python.exe" -OO ./{fn}')

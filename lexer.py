@@ -45,7 +45,7 @@ NDIC  = {1: {i("+"): POS, i("-"): NEG, i("!"): NOT, i("@"): REF},
              i("<"): LT, i("<="): LE, i("=="): EQ, i("!="): NE,
              i(">="): GE, i(">"): GT, i("~"): RANGE},
          }
-NV = frozenset(chain(*NDIC.values()))
+NV = frozenset(chain.from_iterable(NDIC.values()))
 KEYWORDS  = frozenset({"if"})
 LCOMMENT  = "#"
 SCOMMENT  = "#*"
