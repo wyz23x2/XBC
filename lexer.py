@@ -157,22 +157,9 @@ class Op(_Token):
     def isop(s: str, n: int|None = None):
         s = i(s)
         if n is None:
-            for x in NDIC:
-                try:
-                    NDIC[x][s]
-                except KeyError:
-                    pass
-                else:
-                    return True
-            else:
-                return False
+            return bool(tuple(filter(lambda x: s in x, NDIC.values())))
         else:
-            try:
-                NDIC[n][s]
-            except KeyError:
-                return False
-            else:
-                return True
+            return n in NDIC and s in NDIC[n]
     def __str__(self):
         return f'{self.__class__.__name__}({self.op!r})'
     def __repr__(self):
@@ -286,7 +273,11 @@ def lex(code: str) -> list[token.Token]:
             for _ in range(1, depth):
                 t = t[-1]
             t.add(x)
-    while True:
+    prevse = -1, -1
+    while 1:
+        if (start, end) == prevse:
+            end -= 1
+        prevse = start, end
         if end > lc:
             break
         if end <= start:
@@ -296,7 +287,6 @@ def lex(code: str) -> list[token.Token]:
             start += 1
         valid = 0
         s = code[start:end]
-        # print(f'{start=!r} {end=!r} {s=!r}')
         if depth and start >= group_se[-1][1]:
             depth -= 1
             group_se.pop()
@@ -364,16 +354,29 @@ def lex(code: str) -> list[token.Token]:
             while start < lc and (code[start] in _ws or code[start] in EB):
                 start += 1
     return tokens
-def Lex(code, showinput=False):
+def Lex(code, showinput=False, showoutput=True):
     from time import perf_counter
     t = perf_counter()
     x = lex(code)
     t = perf_counter()-t
     if showinput:
-        print(f'  lex({code!r})\n>', end=' ')
-    print(f'{x!r}\nTime used: {t:.8f}s')
+        print(f'  lex({code!r})\n', end=('> ' if showoutput else ''))
+    if showoutput:
+        print(f'{x!r}')
+    print(f'Time used: {t:.8f}s')
     return x, t
 
 if __name__ == '__main__' and DEBUG >= 2:
     # Lex(r'"\\\nx"+"y"')
-    Lex('if (-156*-(.657>>3^+x*2.48)-15)*-394.48-3+(10945)*8-6>>2 > 59583*(455-(34858+int("34757")/int("7\\n")[0]))*474)-4958<<(50/5):')
+    Lex('if 3377-(-156*-(.657>>3^+x*2.48)-15)*-394.48-3+(10945)*8-6>>2 > 59583*(455-(34858+int("34757")/int("7\\n")[0]))*474)-4958<<(50/5):\n    print(50+59583*(455-(34858+int("34757")/int("7\\n")[0]))*474)'
+        '-4958<<(50/5+59583*(455-(34858+int("34757")/int("7\\n")[0]))*474)-4958<<(50/5)))\n(4585842348586<<39/5)^(577667405820-58.394+3939+" 5\\n"[1]-485821.3948-59*4)+7747028.494+(((((((717779688)-6)*5)^27)%4983)-21039)+39485<<2)'
+        '\n77.5+((((((((((((((((8<<1))))))))))))))))\nprint("\\r\\n\\\\\\n")'
+        '(((((((((((((((((((((((((((((())))))))))))))))))))))))))))))\n'
+        '(((((((((((((((((((((((((((((())))))))))))))))))))))))))))))\n'
+        '((((((((((((((((((((((((((((3<<7))))))))))))))))))))))))))))\n'
+        '[([{([{[((([{[[[[((({{[([(({{[]}}))])]}})))]]]]}])))]}])}])]\n'
+        'if 3377-(-156*-(.657>>3^+x*2.48)-15)*-394.48-3+(10945)*8-6>>2 > 59583*(455-(34858+int("34757")/int("7\\n")[0]))*474)-4958<<(50/5):\n    print(50+59583*(455-(34858+int("34757")/int("7\\n")[0]))*474)'
+        '-4958<<(50/5+59583*(455-(34858+int("34757")/int("7\\n")[0]))*474)-4958<<(50/5)))\n(4585842348586<<39/5)^(577667405820-58.394+3939+" 5\\n"[1]-485821.3948-59*4)+7747028.494+(((((((717779688)-6)*5)^27)%4983)-21039)+39485<<2)'
+        '\n77.5+((((((((((((((((8<<1))))))))))))))))\nprint("\\r\\n\\\\\\n")'
+        '[([{([{[((([{[[[[((({{[([(({{[]}}))])]}})))]]]]}])))]}])}])]\n'
+        '1[2[3[4[5[6[7[8[9[10[11[12[13[14[15]16]17]18]19]20]21]22]23]24]25]26]27]28]29', showoutput=False)
