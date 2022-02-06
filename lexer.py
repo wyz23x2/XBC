@@ -205,7 +205,11 @@ class Integer(_Token):
     def isint(s):
         if not s:
             return False
-        return not tuple(filter(lambda x: not isdigit(x), s))
+        for x in s:
+            if not isdigit(x):
+                return False
+        return True
+        # return not tuple(filter(lambda x: not isdigit(x), s))
 del Integer
 @token
 class Float(_Token):
