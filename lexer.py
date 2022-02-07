@@ -6,12 +6,16 @@ from itertools import chain
 from string import ascii_letters as _letters, whitespace as _ws
 from collections import deque
 if implementation.name == 'pypy':
+    # cache is much slower on PyPy
     cache = (lambda x: x)
+    pypy = True
+    import __pypy__  # type: ignore
 else:
     try:
         from functools import cache
     except ImportError:
         from functools import lru_cache as cache
+    pypy = False
 
 # Binary Operators #
 ADD    = 0x1   #  +
@@ -39,24 +43,32 @@ POS    = 0x15  #  +
 NEG    = 0x16  #  -
 REF    = 0x17  #  @
 # Bitwise AND/OR/NOT are functions in XBC.
-NDIC  = {1: {i("+"): POS, i("-"): NEG, i("!"): NOT, i("@"): REF},
-         2: {i("+"): ADD, i("-"): NEG, i("*"): MUL, i("/"): DIV,
-             i("%"): MOD, i("^"): POW, i("<<"): LSHIFT, i(">>"): RSHIFT,
-             i("<"): LT, i("<="): LE, i("=="): EQ, i("!="): NE,
-             i(">="): GE, i(">"): GT, i("~"): RANGE},
-         }
+if pypy:
+    NDIC = __pypy__.newdict('strdict')
+else:
+    NDIC = {}
+NDIC.update({1: {i("+"): POS, i("-"): NEG, i("!"): NOT, i("@"): REF},
+             2: {i("+"): ADD, i("-"): NEG, i("*"): MUL, i("/"): DIV,
+                 i("%"): MOD, i("^"): POW, i("<<"): LSHIFT, i(">>"): RSHIFT,
+                 i("<"): LT, i("<="): LE, i("=="): EQ, i("!="): NE,
+                 i(">="): GE, i(">"): GT, i("~"): RANGE},
+            })
 NV = frozenset(chain.from_iterable(NDIC.values()))
-KEYWORDS  = frozenset({"if"})
+KEYWORDS  = frozenset({"if", "else", "load", "del", "func"})
 LCOMMENT  = "#"
 SCOMMENT  = "#*"
 ECOMMENT  = "*#"
 STRSTART  = "'", '"'
 STREND    = STRSTART
 RESERVED  = '\x03'
-ESCAPE_MAPPING = {i('\\\\'): f'\\{RESERVED}',  # !! This must be the first.
-                  i(r'\n'): '\n',
-                  i(r'\r'): '\r',
-                  i(r'\t'): '\t'}
+if pypy:
+    ESCAPE_MAPPING = __pypy__.newdict('strdict')
+else:
+    ESCAPE_MAPPING = {}
+ESCAPE_MAPPING.update({i('\\\\'): f'\\{RESERVED}',  # !! This must be the first.
+                       i(r'\n'): '\n',
+                       i(r'\r'): '\r',
+                       i(r'\t'): '\t'})
 DIGITS    = frozenset(('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'))
 NAMESET   = frozenset(DIGITS | frozenset(_letters) | frozenset(('$', '_')))
 NDNS = NAMESET - DIGITS
@@ -89,6 +101,7 @@ class _tokenns:
 token = _tokenns('token')
 @token('Token')
 class _Token:
+    __slots__ = '_Token__tid', '_Token__id', 'cnt'
     _tid = 0
     _id = 0
     def _setid(self):
@@ -127,6 +140,7 @@ class _Token:
         return hash(self.content)
 @token
 class Name(_Token):
+    __slots__ = '_Token__tid', '_Token__id', 'name'
     def __init__(self, name: str):
         self._setid()
         self.name = name
@@ -136,12 +150,13 @@ class Name(_Token):
     @staticmethod
     @cache
     def isname(s: str):
-        if s[0] not in NDNS:
+        if not s or s[0] not in NDNS:
             return False
-        return not frozenset(s)-NAMESET
+        return not frozenset(s[1:])-NAMESET
 del Name
 @token
 class Op(_Token):
+    __slots__ = '_Token__tid', '_Token__id', 'op'
     def __init__(self, op: str, /):
         self._setid()
         self.op = i(op)
@@ -180,6 +195,7 @@ class Op(_Token):
 del Op
 @token
 class Keyword(_Token):
+    __slots__ = '_Token__tid', '_Token__id', 'keyword'
     def __init__(self, keyword: str):
         if not self.iskeyword(keyword):
             warning(f"Invalid keyword: {keyword!r}", stacklevel=5)
@@ -198,6 +214,7 @@ class String(_Token):
 del String
 @token
 class Integer(_Token):
+    __slots__ = '_Token__tid', '_Token__id', 'n'
     def __init__(self, n: str):
         if not self.isint(n):
             warning(f"Invalid integer: {n!r}", stacklevel=5)
@@ -218,6 +235,7 @@ class Integer(_Token):
 del Integer
 @token
 class Float(_Token):
+    __slots__ = '_Token__tid', '_Token__id', 'f'
     def __init__(self, f: str):
         if not self.isfloat(f):
             warning(f"Invalid float: {f!r}", stacklevel=5)
@@ -242,6 +260,7 @@ class Float(_Token):
 del Float
 @token
 class Group(_Token):
+    __slots__ = '_Token__tid', '_Token__id', 'tokens', 'bracket'
     def __init__(self, *tokens, bracket='('):
         self.tokens = list(tokens)
         self.bracket = bracket
@@ -266,6 +285,7 @@ MAPPING = {token.Keyword.iskeyword: token.Keyword,
            token.Integer.isint: token.Integer,
            token.Float.isfloat: token.Float,
            token.Name.isname: token.Name}
+@cache
 def lex(code: str) -> list[token.Token]:
     if not code.strip():
         return []
@@ -365,8 +385,11 @@ def lex(code: str) -> list[token.Token]:
             end -= 1
             while start < lc and (code[start] in _ws or code[start] in EB):
                 start += 1
+    if pypy:
+        import gc
+        gc.collect()
     return tokens
-def Lex(code, showinput=False, showoutput=True):
+def Lex(code, showinput=False, showoutput=True, showtime=True):
     from time import perf_counter
     t = perf_counter()
     x = lex(code)
@@ -375,14 +398,12 @@ def Lex(code, showinput=False, showoutput=True):
         print(f'  lex({code!r})\n', end=('> ' if showoutput else ''))
     if showoutput:
         print(f'{x!r}')
-    print(f'Time used: {t:.8f}s')
+    if showtime:
+        print(f'Time used: {t:.8f}s')
     return x, t
 
 if __name__ == '__main__' and DEBUG >= 2:
     # Lex(r'"\\\nx"+"y"')
-    Lex('if 3377-(-156*-(.657>>3^+x*2.48)-15)*-394.48-3+(10945)*8-6>>2 > 59583*(455-(34858+int("34757")/int("7\\n")[0]))*474)-4958<<(50/5):\n    print(50+59583*(455-(34858+int("34757")/int("7\\n")[0]))*474)'
-        '-4958<<(50/5+59583*(455-(34858+int("34757")/int("7\\n")[0]))*474)-4958<<(50/5)))\n(4585842348586<<39/5)^(577667405820-58.394+3939+" 5\\n"[1]-485821.3948-59*4)+7747028.494+(((((((717779688)-6)*5)^27)%4983)-21039)+39485<<2)'
-        '\n77.5+((((((((((((((((8<<1))))))))))))))))\nprint("\\r\\n\\\\\\n")'
-        '((((((((((((((((((((((((((((3<<7))))))))))))))))))))))))))))\n'
-        '[([{([{[((([{[[[[((({{[([(({{[]}}))])]}})))]]]]}])))]}])}])]\n'
-        '1[2[3[4[5[6[7[8[9[10[11[12[13[14[15]16]17]18]19]20]21]22]23]24]25]26]27]28]29', showoutput=False)
+    with open('.content.txt', encoding='UTF-8') as f:
+        content = f.read()
+    Lex(content, showoutput=False)
