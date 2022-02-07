@@ -25,6 +25,13 @@ class Call(Action):
         return f'{self.caller!s}({", ".join(map(str, self.args))})'
     def __repr__(self):
         return f'Call(caller={self.caller!r}, args={self.args!r})'
+class Assign(Action):
+    def __init__(self, name: str, value: Action):
+        self.name, self.value = name, value
+    def __str__(self):
+        return f'{self.name!s} = {self.value!s}'
+    def __repr__(self):
+        return f'Assign(name={self.name!r}, value={self.value!r})'
 class Parser:
     # TODO
     def __init__(self, tokens: list[token.Token], flags: dict|None = None):

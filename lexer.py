@@ -152,7 +152,10 @@ class Name(_Token):
     def isname(s: str):
         if (not s) or (s[0] not in NDNS):
             return False
-        return not frozenset(s[1:])-NAMESET
+        for x in s:
+            if x not in NAMESET:
+                return False
+        return True
 del Name
 @token
 class Op(_Token):
