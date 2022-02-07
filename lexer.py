@@ -150,7 +150,7 @@ class Name(_Token):
     @staticmethod
     @cache
     def isname(s: str):
-        if not s or s[0] not in NDNS:
+        if (not s) or (s[0] not in NDNS):
             return False
         return not frozenset(s[1:])-NAMESET
 del Name
