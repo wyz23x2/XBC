@@ -152,7 +152,7 @@ class Name(_Token):
     def isname(s: str):
         if (not s) or (s[0] not in NDNS):
             return False
-        for x in s:
+        for x in s[1:]:
             if x not in NAMESET:
                 return False
         return True
