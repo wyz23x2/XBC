@@ -200,6 +200,7 @@ del Op
 class Keyword(_Token):
     __slots__ = '_Token__tid', '_Token__id', 'keyword'
     def __init__(self, keyword: str):
+        self._setid()
         if not self.iskeyword(keyword):
             warning(f"Invalid keyword: {keyword!r}", stacklevel=5)
         self.keyword = keyword
@@ -219,6 +220,7 @@ del String
 class Integer(_Token):
     __slots__ = '_Token__tid', '_Token__id', 'n'
     def __init__(self, n: str):
+        self._setid()
         if not self.isint(n):
             warning(f"Invalid integer: {n!r}", stacklevel=5)
         self.n = n
@@ -240,6 +242,7 @@ del Integer
 class Float(_Token):
     __slots__ = '_Token__tid', '_Token__id', 'f'
     def __init__(self, f: str):
+        self._setid()
         if not self.isfloat(f):
             warning(f"Invalid float: {f!r}", stacklevel=5)
         self.f = f
@@ -265,6 +268,7 @@ del Float
 class Group(_Token):
     __slots__ = '_Token__tid', '_Token__id', 'tokens', 'bracket'
     def __init__(self, *tokens, bracket='('):
+        self._setid()
         self.tokens = list(tokens)
         self.bracket = bracket
     def add(self, *tokens):

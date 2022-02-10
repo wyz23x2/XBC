@@ -25,6 +25,12 @@ class Call(Action):
         return f'{self.caller!s}({", ".join(map(str, self.args))})'
     def __repr__(self):
         return f'Call(caller={self.caller!r}, args={self.args!r})'
+class Operator(Action):
+    def __init__(self, op: str, *sides):
+        self.op = op
+        self.sides = sides
+    def __repr__(self):
+        return f'Operator({self.op!r}, {", ".join(map(repr, self.sides))})'
 class Assign(Action):
     def __init__(self, name: str, value: Action):
         self.name, self.value = name, value
@@ -32,6 +38,23 @@ class Assign(Action):
         return f'{self.name!s} = {self.value!s}'
     def __repr__(self):
         return f'Assign(name={self.name!r}, value={self.value!r})'
+class IfTree(Action):
+    def __init__(self, if_: Action, /, *elseifselse):
+        self.If = if_
+        if elseifselse:
+            self.elseifs, self.Else = elseifselse[:-1], elseifselse[-1]
+        else:
+            self.elseifs, self.Else = (), None
+    def __repr__(self):
+        return f'IfTree(if={self.If!r}, elseifs={self.elseifs!r}, else={self.Else!r})'
+    def __getattr__(self, name: str, /):
+        try:
+            return getattr(self, {'if': 'If', 'if_': 'If',
+                                  'Elseifs': 'elseifs',
+                                  'else': 'Else', 'else_': 'Else'}[name])
+        except (AttributeError, KeyError):
+            pass
+        return object.__getattribute__(self, name)
 class Parser:
     # TODO
     def __init__(self, tokens: list[token.Token], flags: dict|None = None):
