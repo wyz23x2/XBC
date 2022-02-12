@@ -1,4 +1,5 @@
 from __future__ import annotations
+__all__ = ['token']
 from main import *
 from utils import *
 from sys import intern as i, implementation
@@ -18,30 +19,42 @@ else:
     pypy = False
 
 # Binary Operators #
-ADD    = 0x1   #  +
-SUB    = 0x2   #  -
-MUL    = 0x3   #  *
-DIV    = 0x4   #  /
-MOD    = 0x5   #  %
-POW    = 0x6   #  ^
-LSHIFT = 0x7   #  <<
-RSHIFT = 0x8   #  >>
-LT     = 0x9   #  <
-LE     = 0xA   #  <=
-EQ     = 0xB   #  ==
-NE     = 0xC   #  !=
-GE     = 0xD   #  >=
-GT     = 0xE   #  >
-RANGE  = 0xF   #  ~
-ASSIGN = 0x10  #  =
-MEMBER = 0x11  #  .
-AND    = 0x12  #  &
-OR     = 0x13  #  |
+ADD     = 0x1   #  +
+SUB     = 0x2   #  -
+MUL     = 0x3   #  *
+DIV     = 0x4   #  /
+MOD     = 0x5   #  %
+POW     = 0x6   #  ^
+LSHIFT  = 0x7   #  <<
+RSHIFT  = 0x8   #  >>
+LT      = 0x9   #  <
+LE      = 0xA   #  <=
+EQ      = 0xB   #  ==
+NE      = 0xC   #  !=
+GE      = 0xD   #  >=
+GT      = 0xE   #  >
+RANGE   = 0xF   #  ~
+ASSIGN  = 0x10  #  =
+IADD    = 0x11  #  +=
+ISUB    = 0x12  #  -=
+IMUL    = 0x13  #  *=
+IDIV    = 0x14  #  /=
+IMOD    = 0x15  #  %=
+IPOW    = 0x16  #  ^=
+ILSHIFT = 0x17  #  <<=
+IRSHIFT = 0x18  #  >>=
+IRANGE  = 0x19  #  ~=
+IAND    = 0x1A  #  &=
+IOR     = 0x1B  #  |=
+MEMBER  = 0x1C  #  .
+AND     = 0x1D  #  &
+OR      = 0x1E  #  |
 # Unary Operators #
-NOT    = 0x14  #  !
-POS    = 0x15  #  +
-NEG    = 0x16  #  -
-REF    = 0x17  #  @
+NOT     = 0x1F  #  !
+POS     = 0x20  #  +
+NEG     = 0x21  #  -
+REF     = 0x22  #  @
+__all__.extend(filter(str.isupper, globals()))
 # Bitwise AND/OR/NOT are functions in XBC.
 if pypy:
     NDIC = __pypy__.newdict('strdict')
@@ -54,13 +67,15 @@ NDIC.update({1: {i("+"): POS, i("-"): NEG, i("!"): NOT, i("@"): REF},
                  i(">="): GE, i(">"): GT, i("~"): RANGE},
             })
 NV = frozenset(chain.from_iterable(NDIC.values()))
-KEYWORDS  = frozenset({"if", "else", "load", "del", "func"})
+KEYWORDS  = frozenset(("if", "else", "load", "del", "func",
+                       "global", "local", "inner", "outer",
+                       "private", "public"))
 LCOMMENT  = "#"
 SCOMMENT  = "#*"
 ECOMMENT  = "*#"
 STRSTART  = "'", '"'
 STREND    = STRSTART
-RESERVED  = '\x03'
+RESERVED  = '\x06'
 if pypy:
     ESCAPE_MAPPING = __pypy__.newdict('strdict')
 else:
