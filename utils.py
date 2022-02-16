@@ -1,4 +1,4 @@
-__all__ = ['printf', 'Signal', 'signals', 'warning', 'fail']
+__all__ = ['printf', 'Signal', 'signals', 'warning', 'fail', 'abort']
 import traceback as t
 import warnings as w
 from typing import Callable as C, NoReturn
@@ -28,6 +28,7 @@ def _translate(a):
                   .replace(f'${c}'.lower(), COLOR_DICT[c])
                   .replace(f'${c} '.title(), COLOR_DICT[c])
                   .replace(f'${c}'.title(), COLOR_DICT[c]))
+    return a
 def printf(*args, **kwargs):
     """Print translating color codes in strings."""
     args = list(args)
@@ -98,11 +99,16 @@ def warning(message: str=None, type: Warning=Warning, *, stacklevel: int=2):
 @signals.register('fail')
 def fail_handler(exc: BaseException, /) -> NoReturn:
     if DEBUG == 0:
-        printf(f'$b$R Core error! {exc.__class__.__name__}: {exc!s}$r')
+        tb = exc.__traceback__
+        s = [f'L{tb.tb_lineno}']
+        while tb.tb_next is not None:
+            tb = tb.tb_next
+            s.append(f'L{tb.tb_lineno}')
+        printf(f'$b$R Core error! {exc.__class__.__name__} ({"->".join(s)}): {exc!s}$r')
     else:
         printf('$b$R Core error!')
-        print(t.format_exception(exc), end='')
-        printf('$r')
+        print(*t.format_exception(exc), sep='', end='')
+        printf('$r', end='')
     abort()
 def fail(exc: BaseException, /):
     signals.fail(exc)

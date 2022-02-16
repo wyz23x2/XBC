@@ -2,7 +2,7 @@ __all__ = 'VERSION', 'VERHEX', 'XBC', 'xstr', 'xrepr', 'xcmp', 'xis', 'xin'
 VERSION = '0.1.0a1'
 #          Minor Level (dev->0, a->1, b->2, c->3, final->4)
 #             vv  v
-VERHEX  = 0o00010011
+VEROCT  = 0o00010011
 #           ^^  ^^ ^ Serial
 #        Major Micro
 from utils import *
@@ -40,8 +40,12 @@ def xis(a: XBC, b: XBC, /):
     return a.__xbc_is__(b)
 def xin(a: XBC, b: XBC, /):
     return a.__xbc_in__(b)
+from xbuiltins import *
+def xerr(e: XError, /):
+    printf(f'$b$R!$r$R  Error occurred. Traceback:\nFile "{e.filename}", line {e.lineno}:\n  {e.line}\n{xstr(e)}$r', file=sys.stderr)
+    ...
 def xwarn(e, /):
     from xbuiltins import XError
     ...
 if __name__ == '__main__':
-    print(VERHEX)
+    print(VEROCT)

@@ -4,9 +4,10 @@ c = Context(32, ROUND_HALF_UP)
 c.clear_traps()
 setcontext(c)
 class XError(XBC):
-    def __init__(self, message: XBC):
+    def __init__(self, message: XBC | str, filename: str, line: str, lineno: int):
         super().__init__()
         self.message = message
+        self.filename, self.line, self.lineno = filename, line, lineno
     def __eq__(self, other):
         if type(other) is not type(self):
             return False

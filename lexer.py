@@ -69,7 +69,7 @@ NDIC.update({1: {i("+"): POS, i("-"): NEG, i("!"): NOT, i("@"): REF},
 NV = frozenset(chain.from_iterable(NDIC.values()))
 KEYWORDS  = frozenset(("if", "else", "load", "del", "func",
                        "global", "local", "inner", "outer",
-                       "private", "public"))
+                       "private", "public", "async", "task"))
 LCOMMENT  = "#"
 SCOMMENT  = "#*"
 ECOMMENT  = "*#"
@@ -84,12 +84,13 @@ ESCAPE_MAPPING.update({i('\\\\'): f'\\{RESERVED}',  # !! This must be the first.
                        i(r'\n'): '\n',
                        i(r'\r'): '\r',
                        i(r'\t'): '\t'})
-DIGITS    = frozenset(('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'))
-NAMESET   = frozenset(DIGITS | frozenset(_letters) | frozenset(('$', '_')))
+PUREDIGITS = frozenset(('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'))
+DIGITS     = PUREDIGITS | frozenset(('_',))
+NAMESET    = PUREDIGITS | frozenset(_letters) | frozenset(('$', '_'))
 NDNS = NAMESET - DIGITS
-PAIRS     = frozenset((('(', ')'), ('[', ']'), ('{', '}')))
-EB        = frozenset(p[1] for p in PAIRS)
-CAPTURE   = frozenset((':', ',', '\n', ';'))
+PAIRS      = frozenset((('(', ')'), ('[', ']'), ('{', '}')))
+EB         = frozenset(p[1] for p in PAIRS)
+CAPTURE    = frozenset((':', ',', '\n', ';'))
 del implementation, chain, _letters
 
 @cache
@@ -128,7 +129,7 @@ class _Token:
         self._setid()
         self.cnt = content
     @staticmethod
-    def _cls_name(cls):
+    def _cls_name(cls) -> str:
         if getattr(cls, 'in_token', False):
             return f'token.{cls.__name__}'
         return cls.__name__
@@ -313,14 +314,10 @@ def lex(code: str) -> list[token.Token]:
         return []
     lc = len(code)
     tokens = deque(maxlen=lc)
-    start = 0
-    end = lc
-    group_se = deque()
-    depth = 0
+    ta, start, end, group_se, depth = tokens.append, 0, lc, deque(), 0
     def append(x):
-        nonlocal tokens, group_se
         if depth <= 0:
-            tokens.append(x)
+            ta(x)
         else:
             t = tokens[-1]
             for _ in range(1, depth):

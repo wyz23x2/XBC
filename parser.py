@@ -1,9 +1,10 @@
 from collections import deque
 from main import *
 from utils import *
-from xbc import XBC
+from xbc import XBC, xerr
 import xbuiltins as xb
 from lexer import *
+from xbc import *
 P = {ASSIGN: 0, IADD: 0, ISUB: 0, IMUL: 0, IDIV: 0,
      IMOD: 0, IPOW: 0, ILSHIFT: 0, IRSHIFT: 0, IAND: 0, IOR: 0,
      AND: 1, OR: 1, NOT: 1,
@@ -74,12 +75,38 @@ class Parser:
         self.tokens = tokens
         self.flags = flags
     def __iter__(self):
-        # flake8: noqa
-        raise NotImplementedError
         stack = []
+        func = stack.append
         for tk in self.tokens:
             match type(tk):
-                case _:
-                    ...
-        
-    
+                case token.Integer | token.Float:
+                    # Underscore processing #
+                    if tk.content[-1] == '_' or '_.' in tk.content:
+                        # No trailing underscores.
+                        xerr(xb.XError('Invalid decimal literal: trailing underscores', '<test>', 'x', 0))
+                        signals.exit(1)
+                    if '___' in tk.content:
+                        # Only up to two underscores.
+                        ...
+                    if '._' in tk.content:
+                        # No leading underscores in the decimal part.
+                        ...
+                    tk.content = tk.content.replace('_', '')
+                    func(xb.XNum(tk.content))
+                case token.String:
+                    func(xb.XStr(tk.content))
+                case token.Group:
+                    if tk.bracket == '(':
+                        ...
+                    elif tk.bracket == '[':
+                        ...
+                    elif tk.bracket == '{':
+                        ...
+                    else:
+                        raise ValueError(f'Invalid Group.bracket {tk.bracket!r}')
+
+if __name__ == '__main__':
+    try:
+        ...  # list(Parser([token.Group(bracket='x')]))
+    except Exception as e:
+        fail(e)
