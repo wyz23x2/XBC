@@ -1,5 +1,5 @@
 from __future__ import annotations
-__all__ = ['token']
+__all__ = ['token', 'pypy']
 from main import *
 from utils import *
 from sys import intern as i, implementation
@@ -11,6 +11,7 @@ if implementation.name == 'pypy':
     cache = (lambda x: x)
     pypy = True
     import __pypy__  # type: ignore
+    __all__.append('__pypy__')
 else:
     try:
         from functools import cache
