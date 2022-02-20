@@ -1,10 +1,55 @@
-from collections import deque
 from main import *
 from utils import *
 from xbc import XBC, xerr
 import xbuiltins as xb
 from lexer import *
 from xbc import *
+# Binary Operators #
+ADD     = 0x1   #  +
+SUB     = 0x2   #  -
+MUL     = 0x3   #  *
+DIV     = 0x4   #  /
+MOD     = 0x5   #  %
+POW     = 0x6   #  ^
+LSHIFT  = 0x7   #  <<
+RSHIFT  = 0x8   #  >>
+LT      = 0x9   #  <
+LE      = 0xA   #  <=
+EQ      = 0xB   #  ==
+NE      = 0xC   #  !=
+GE      = 0xD   #  >=
+GT      = 0xE   #  >
+RANGE   = 0xF   #  ~
+ASSIGN  = 0x10  #  =
+IADD    = 0x11  #  +=
+ISUB    = 0x12  #  -=
+IMUL    = 0x13  #  *=
+IDIV    = 0x14  #  /=
+IMOD    = 0x15  #  %=
+IPOW    = 0x16  #  ^=
+ILSHIFT = 0x17  #  <<=
+IRSHIFT = 0x18  #  >>=
+IRANGE  = 0x19  #  ~=
+IAND    = 0x1A  #  &=
+IOR     = 0x1B  #  |=
+MEMBER  = 0x1C  #  .
+AND     = 0x1D  #  &
+OR      = 0x1E  #  |
+# Unary Operators #
+NOT     = 0x1F  #  !
+POS     = 0x20  #  +
+NEG     = 0x21  #  -
+REF     = 0x22  #  @
+if pypy:
+    OPDIC = __pypy__.newdict('strdict')
+else:
+    OPDIC = {}
+OPDIC.update({1: {i("+"): POS, i("-"): NEG, i("!"): NOT, i("@"): REF},
+              2: {i("+"): ADD, i("-"): NEG, i("*"): MUL, i("/"): DIV,
+                  i("%"): MOD, i("^"): POW, i("<<"): LSHIFT, i(">>"): RSHIFT,
+                  i("<"): LT, i("<="): LE, i("=="): EQ, i("!="): NE,
+                  i(">="): GE, i(">"): GT, i("~"): RANGE},
+             })
 P = {ASSIGN: 0, IADD: 0, ISUB: 0, IMUL: 0, IDIV: 0,
      IMOD: 0, IPOW: 0, ILSHIFT: 0, IRSHIFT: 0, IAND: 0, IOR: 0,
      AND: 1, OR: 1, NOT: 1,
@@ -40,6 +85,7 @@ class Call(Action):
 class Operator(Action):
     def __init__(self, op: str, *sides):
         self.op = op
+        self.o = OPDIC[op]
         self.sides = list(sides)
     def append(self, x, /):
         self.sides.append(x)
