@@ -4,6 +4,7 @@ from xbc import XBC, xerr
 import xbuiltins as xb
 from lexer import *
 from xbc import *
+from sys import intern as i
 # Binary Operators #
 ADD     = 0x1   #  +
 SUB     = 0x2   #  -
@@ -85,12 +86,12 @@ class Call(Action):
 class Operator(Action):
     def __init__(self, op: str, *sides):
         self.op = op
-        self.o = OPDIC[op]
+        self.o = OPDIC[len(sides)][i(op)]
         self.sides = list(sides)
     def append(self, x, /):
         self.sides.append(x)
     def __repr__(self):
-        return f'Operator({self.op!r}, {", ".join(map(repr, self.sides))})'
+        return f'Operator({self.op!r}, 0x{self.o:X}, {", ".join(map(repr, self.sides))})'
 class Assign(Action):
     def __init__(self, name: str, value: XBC):
         self.name, self.value = name, value

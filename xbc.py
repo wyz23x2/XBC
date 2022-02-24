@@ -1,4 +1,4 @@
-__all__ = 'VERSION', 'VERHEX', 'XBC', 'xstr', 'xrepr', 'xcmp', 'xis', 'xin'
+__all__ = 'VERSION', 'VEROCT', 'XBC', 'xstr', 'xrepr', 'xcmp', 'xis', 'xin'
 VERSION = '0.1.0a1'
 #          Minor Level (dev->0, a->1, b->2, c->3, final->4)
 #             vv  v

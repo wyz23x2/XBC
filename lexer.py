@@ -255,12 +255,17 @@ class Group(_Token):
         return f'{self.__class__.__name__}({", ".join(map(str, self.tokens))}, bracket={self.bracket!r})'
     def __repr__(self):
         return f'{self._cls_name(self.__class__)}({", ".join(map(repr, self.tokens))}, bracket={self.bracket!r})'
+def iscomment(s: str):
+    if s.startswith(LCOMMENT) and '\n' not in s:
+        return True
+    return s.startswith(SCOMMENT) and s.endswith(ECOMMENT)
 del Group
 MAPPING = {token.Keyword.iskeyword: token.Keyword,
            token.Op.isop: token.Op,
            token.Integer.isint: token.Integer,
            token.Float.isfloat: token.Float,
-           token.Name.isname: token.Name}
+           token.Name.isname: token.Name,
+           iscomment: 'ignore'}
 @cache
 def lex(code: str) -> list[token.Token]:
     if not code.strip():
@@ -327,7 +332,9 @@ def lex(code: str) -> list[token.Token]:
         else:
             for func in MAPPING:
                 if func(s):
-                    append(MAPPING[func](s))
+                    if (fn := MAPPING[func]):
+                        break
+                    append(fn(s))
                     valid = 1
                     break
             else:
