@@ -10,3 +10,4 @@ make*
 **/*.obj
 **/*.egg-info
 push.bat
+timecompare.*
