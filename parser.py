@@ -42,15 +42,15 @@ POS     = 0x20  #  +
 NEG     = 0x21  #  -
 REF     = 0x22  #  @
 if pypy:
-    OPDIC = __pypy__.newdict('strdict')
+    d1, d2 = __pypy__.newdict('strdict'), __pypy__.newdict('strdict')
 else:
-    OPDIC = {}
-OPDIC.update({1: {i("+"): POS, i("-"): NEG, i("!"): NOT, i("@"): REF},
-              2: {i("+"): ADD, i("-"): NEG, i("*"): MUL, i("/"): DIV,
-                  i("%"): MOD, i("^"): POW, i("<<"): LSHIFT, i(">>"): RSHIFT,
-                  i("<"): LT, i("<="): LE, i("=="): EQ, i("!="): NE,
-                  i(">="): GE, i(">"): GT, i("~"): RANGE},
-             })
+    d1, d2 = {}, {}
+d1.update({i("+"): POS, i("-"): NEG, i("!"): NOT, i("@"): REF})
+d2.update({i("+"): ADD, i("-"): NEG, i("*"): MUL, i("/"): DIV,
+           i("%"): MOD, i("^"): POW, i("<<"): LSHIFT, i(">>"): RSHIFT,
+           i("<"): LT, i("<="): LE, i("=="): EQ, i("!="): NE,
+           i(">="): GE, i(">"): GT, i("~"): RANGE})
+OPDIC = {1: d1, 2: d2}
 P = {ASSIGN: 0, IADD: 0, ISUB: 0, IMUL: 0, IDIV: 0,
      IMOD: 0, IPOW: 0, ILSHIFT: 0, IRSHIFT: 0, IAND: 0, IOR: 0,
      AND: 1, OR: 1, NOT: 1,
